@@ -33,13 +33,11 @@ func NewClient(cfg *ClientConfig) *Client {
 
 // Do executes an HTTP request against the client's base path, retrying on
 // transient failures (429, 502, 503, 504). The response body is JSON-decoded into dst.
-func (c *Client) Do(ctx context.Context, method, path string, body, dst any) error {
+// headers are merged on top of the default Accept/Content-Type headers; pass nil for none.
+func (c *Client) Do(ctx context.Context, method, path string, headers http.Header, body, dst any) error {
 	url := c.config.BasePath + path
 
-	attempts := c.config.Retry
-	if attempts < 1 {
-		attempts = 1
-	}
+	attempts := max(c.config.Retry, 1)
 
 	var lastErr error
 	for i := range attempts {
@@ -51,7 +49,7 @@ func (c *Client) Do(ctx context.Context, method, path string, body, dst any) err
 			}
 		}
 
-		req, err := buildRequest(ctx, method, url, body)
+		req, err := buildRequest(ctx, method, url, headers, body)
 		if err != nil {
 			return err
 		}
@@ -71,7 +69,7 @@ func (c *Client) Do(ctx context.Context, method, path string, body, dst any) err
 	return lastErr
 }
 
-func buildRequest(ctx context.Context, method, url string, body any) (*http.Request, error) {
+func buildRequest(ctx context.Context, method, url string, headers http.Header, body any) (*http.Request, error) {
 	var r io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
@@ -85,10 +83,16 @@ func buildRequest(ctx context.Context, method, url string, body any) (*http.Requ
 	if err != nil {
 		return nil, fmt.Errorf("build request: %w", err)
 	}
+
+	if headers != nil {
+		req.Header = headers
+	}
+
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
 	req.Header.Set("Accept", "application/json")
+
 	return req, nil
 }
 
