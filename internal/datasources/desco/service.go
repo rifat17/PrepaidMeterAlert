@@ -54,6 +54,6 @@ func (s *Service) GetBalance(ctx context.Context, id common.Identifier) (common.
 
 	return common.Balance{
 		Identifier: id,
-		Balance:    int(resp.Data.Balance),
+		Balance:    resp.Data.Balance,
 	}, nil
 }

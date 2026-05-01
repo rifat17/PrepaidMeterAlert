@@ -7,7 +7,7 @@ type Identifier struct {
 
 type Balance struct {
 	Identifier
-	Balance int
+	Balance float64
 }
 
 type AccountDetails struct {
