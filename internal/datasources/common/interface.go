@@ -1,5 +1,7 @@
 package common
 
+import "context"
+
 type DataFetcher interface {
-	GetBalance(Identifier) (Balance, error)
+	GetBalance(context.Context, Identifier) (Balance, error)
 }
