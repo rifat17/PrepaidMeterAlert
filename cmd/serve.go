@@ -2,18 +2,16 @@ package cmd
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/m4hi2/MeterAlertBot/internal/config"
+	"github.com/m4hi2/MeterAlertBot/internal/database"
 	"github.com/m4hi2/MeterAlertBot/internal/database/repo"
 	"github.com/m4hi2/MeterAlertBot/internal/datasources/desco"
 	"github.com/muesli/coral"
-	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/driver/pgdriver"
 )
 
 var serveCmd = &coral.Command{
@@ -23,7 +21,7 @@ var serveCmd = &coral.Command{
 }
 
 func runServe(cmd *coral.Command, _ []string) error {
-	db, err := openDB(config.Get().DB)
+	db, err := database.Open(config.Get().DB)
 	if err != nil {
 		return err
 	}
@@ -44,16 +42,4 @@ func runServe(cmd *coral.Command, _ []string) error {
 	<-ctx.Done()
 	slog.Info("shutting down")
 	return nil
-}
-
-func openDB(cfg config.DBConfig) (*bun.DB, error) {
-	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(cfg.DSN)))
-	db := bun.NewDB(sqldb, nil)
-
-	if err := db.Ping(); err != nil {
-		return nil, err
-	}
-
-	slog.Info("database connected")
-	return db, nil
 }
