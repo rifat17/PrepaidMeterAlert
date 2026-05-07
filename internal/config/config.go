@@ -31,8 +31,10 @@ type DescoConfig struct {
 	RetryDelay time.Duration
 }
 
+var instance *Config
+
 func Load() *Config {
-	return &Config{
+	instance = &Config{
 		Log: LogConfig{
 			Level:  parseLogLevel(getEnv("MA_LOG_LEVEL", "info")),
 			Format: logger.Format(getEnv("MA_LOG_FORMAT", "json")),
@@ -47,6 +49,15 @@ func Load() *Config {
 			RetryDelay: parseDuration(getEnv("MA_DESCO_RETRY_DELAY", "1s")),
 		},
 	}
+	return instance
+}
+
+// Get returns the loaded config, calling Load if it hasn't been called yet.
+func Get() *Config {
+	if instance == nil {
+		return Load()
+	}
+	return instance
 }
 
 func getEnv(key, fallback string) string {

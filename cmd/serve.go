@@ -11,7 +11,6 @@ import (
 	"github.com/m4hi2/MeterAlertBot/internal/config"
 	"github.com/m4hi2/MeterAlertBot/internal/database/repo"
 	"github.com/m4hi2/MeterAlertBot/internal/datasources/desco"
-	"github.com/m4hi2/MeterAlertBot/internal/utils/logger"
 	"github.com/muesli/coral"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/driver/pgdriver"
@@ -24,11 +23,7 @@ var serveCmd = &coral.Command{
 }
 
 func runServe(cmd *coral.Command, _ []string) error {
-	cfg := config.Load()
-
-	logger.InitLogger(cfg.Log.Level, cfg.Log.Format)
-
-	db, err := openDB(cfg.DB)
+	db, err := openDB(config.Get().DB)
 	if err != nil {
 		return err
 	}
@@ -42,7 +37,7 @@ func runServe(cmd *coral.Command, _ []string) error {
 	_ = repo.NewProviderRepo(db)
 	_ = repo.NewNotificationLogRepo(db)
 
-	_ = desco.NewService(cfg.Desco)
+	_ = desco.NewService(config.Get().Desco)
 
 	slog.InfoContext(ctx, "meterbot started")
 

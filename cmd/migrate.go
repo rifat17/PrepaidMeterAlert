@@ -64,14 +64,12 @@ var migrateCreateCmd = &coral.Command{
 }
 
 func runMigration(fn func(*migrate.Migrate) error) error {
-	cfg := config.Load()
-
 	src, err := iofs.New(migrations.FS, ".")
 	if err != nil {
 		return err
 	}
 
-	m, err := migrate.NewWithSourceInstance("iofs", src, cfg.DB.DSN)
+	m, err := migrate.NewWithSourceInstance("iofs", src, config.Get().DB.DSN)
 	if err != nil {
 		return err
 	}
