@@ -1,4 +1,4 @@
-.PHONY: infra infra-down infra-logs mcreate %
+.PHONY: infra infra-down infra-logs mcreate serve %
 
 mcreate:
 	@test -n "$(filter-out $@,$(MAKECMDGOALS))" || (echo "usage: make mcreate <name>"; exit 1)
@@ -6,6 +6,9 @@ mcreate:
 
 %:
 	@:
+
+serve:
+	go run . serve
 
 migrate:
 	go run . migrate up
