@@ -7,8 +7,8 @@ const (
 )
 
 type User struct {
-	BaseTimeStampedModel
+	TimeStampedModel
 
-	Platform   Platform `bun:"platform,notnull"`
-	PlatformID string   `bun:"platform_id,notnull"`
+	Platform   Platform `bun:"platform,notnull,type:varchar(10)"`
+	PlatformID string   `bun:"platform_id,notnull,index"`
 }

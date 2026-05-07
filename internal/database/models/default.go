@@ -8,16 +8,16 @@ import (
 	"github.com/uptrace/bun"
 )
 
-type BaseTimeStampedModel struct {
+type TimeStampedModel struct {
 	bun.BaseModel
 
 	ID        uuid.UUID  `bun:"id,pk,type:uuid,default:uuidv7()"`
-	CreatedAt *time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp"`
-	UpdatedAt *time.Time `bun:"updated_at,nullzero,notnull,default:current_timestamp"`
-	DeletedAt *time.Time `bun:"deleted_at,soft_delete,nullzero"`
+	CreatedAt *time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp,index:,type:brin"`
+	UpdatedAt *time.Time `bun:"updated_at,nullzero,notnull,default:current_timestamp,index:,type:brin"`
+	DeletedAt *time.Time `bun:"deleted_at,soft_delete,nullzero,index:,type:brin"`
 }
 
-func (m *BaseTimeStampedModel) BeforeAppendModel(ctx context.Context, query bun.Query) error {
+func (m *TimeStampedModel) BeforeAppendModel(ctx context.Context, query bun.Query) error {
 	now := time.Now()
 
 	switch query.(type) {
