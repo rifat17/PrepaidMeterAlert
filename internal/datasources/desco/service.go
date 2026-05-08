@@ -8,6 +8,7 @@ import (
 
 	"github.com/m4hi2/MeterAlertBot/internal/config"
 	"github.com/m4hi2/MeterAlertBot/internal/datasources"
+	"golang.org/x/time/rate"
 )
 
 const name = "desco"
@@ -20,7 +21,8 @@ const (
 )
 
 type Service struct {
-	client *datasources.Client
+	client  *datasources.Client
+	limiter *rate.Limiter
 }
 
 func NewService(cfg config.DescoConfig) *Service {
@@ -31,10 +33,15 @@ func NewService(cfg config.DescoConfig) *Service {
 			Retry:      cfg.Retry,
 			RetryDelay: cfg.RetryDelay,
 		}),
+		limiter: rate.NewLimiter(rate.Limit(cfg.RateLimit), 1),
 	}
 }
 
 func (s *Service) GetBalance(ctx context.Context, id datasources.Identifier) (datasources.Balance, error) {
+	if err := s.limiter.Wait(ctx); err != nil {
+		return datasources.Balance{}, fmt.Errorf("rate limit wait: %w", err)
+	}
+
 	ctx = context.WithValue(ctx, datasources.CtxKeyDatasource, datasources.CtxDatasourceDesco)
 
 	q := url.Values{}

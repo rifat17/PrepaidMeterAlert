@@ -42,6 +42,7 @@ type DescoConfig struct {
 	Timeout    time.Duration
 	Retry      int
 	RetryDelay time.Duration
+	RateLimit  float64
 }
 
 var instance *Config
