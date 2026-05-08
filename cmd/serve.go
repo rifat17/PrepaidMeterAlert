@@ -6,11 +6,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/m4hi2/MeterAlertBot/internal/config"
 	"github.com/m4hi2/MeterAlertBot/internal/database"
 	"github.com/m4hi2/MeterAlertBot/internal/database/repo"
-	"github.com/m4hi2/MeterAlertBot/internal/datasources/desco"
+	"github.com/m4hi2/MeterAlertBot/internal/telemetry"
 	"github.com/muesli/coral"
 )
 
@@ -21,21 +22,46 @@ var serveCmd = &coral.Command{
 }
 
 func runServe(cmd *coral.Command, _ []string) error {
-	db, err := database.Open(config.Get().DB)
+	cfg := config.Get()
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if cfg.Telemetry.Enabled {
+		shutdown, err := telemetry.Setup(ctx, telemetry.Config{
+			Endpoint:    cfg.Telemetry.OTLPEndpoint,
+			ServiceName: cfg.Telemetry.ServiceName,
+			Environment: cfg.Telemetry.Environment,
+		})
+		if err != nil {
+			return err
+		}
+		defer func() {
+			flushCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if err := shutdown(flushCtx); err != nil {
+				slog.Error("telemetry shutdown error", "error", err)
+			}
+		}()
+		slog.InfoContext(ctx, "telemetry enabled", "endpoint", cfg.Telemetry.OTLPEndpoint)
+	}
+
+	db, err := database.Open(cfg.DB)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	bunHook, err := telemetry.NewBunHook()
+	if err != nil {
+		return err
+	}
+	db.AddQueryHook(bunHook)
 
 	_ = repo.NewUserRepo(db)
 	_ = repo.NewMeterRepo(db)
 	_ = repo.NewProviderRepo(db)
 	_ = repo.NewNotificationLogRepo(db)
-
-	_ = desco.NewService(config.Get().Desco)
 
 	slog.InfoContext(ctx, "meterbot started")
 

@@ -9,6 +9,13 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type ClientConfig struct {
@@ -19,16 +26,42 @@ type ClientConfig struct {
 }
 
 type Client struct {
-	config *ClientConfig
-	client *http.Client
+	config      *ClientConfig
+	client      *http.Client
+	tracer      trace.Tracer
+	reqDuration metric.Float64Histogram
+	retries     metric.Int64Counter
+	errors      metric.Int64Counter
 }
 
 func NewClient(cfg *ClientConfig) *Client {
+	meter := otel.Meter("meterbot/datasources")
+
+	reqDuration, _ := meter.Float64Histogram(
+		"datasource.http.request.duration",
+		metric.WithUnit("ms"),
+		metric.WithDescription("Total HTTP request duration including any retries"),
+	)
+	retries, _ := meter.Int64Counter(
+		"datasource.http.request.retries",
+		metric.WithDescription("Number of retry attempts on transient errors"),
+	)
+	errors, _ := meter.Int64Counter(
+		"datasource.http.request.errors",
+		metric.WithDescription("Number of requests that ultimately failed"),
+	)
+
 	return &Client{
 		config: cfg,
+		// otelhttp.NewTransport wraps each attempt in a child span automatically.
 		client: &http.Client{
-			Timeout: cfg.Timeout,
+			Timeout:   cfg.Timeout,
+			Transport: otelhttp.NewTransport(http.DefaultTransport),
 		},
+		tracer:      otel.Tracer("meterbot/datasources"),
+		reqDuration: reqDuration,
+		retries:     retries,
+		errors:      errors,
 	}
 }
 
@@ -37,16 +70,35 @@ func NewClient(cfg *ClientConfig) *Client {
 // headers are merged on top of the default Accept/Content-Type headers; pass nil for none.
 func (c *Client) Do(ctx context.Context, method, path string, headers http.Header, body, dst any) error {
 	url := c.config.BasePath + path
+	start := time.Now()
+
+	attrs := []attribute.KeyValue{
+		attribute.String("http.method", method),
+		attribute.String("datasource.base", c.config.BasePath),
+	}
+	ctx, span := c.tracer.Start(ctx, "datasource.request",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(attrs...),
+		trace.WithAttributes(attribute.String("http.url", url)),
+	)
+	defer func() {
+		elapsed := float64(time.Since(start).Milliseconds())
+		c.reqDuration.Record(ctx, elapsed, metric.WithAttributes(attrs...))
+		span.End()
+	}()
 
 	attempts := max(c.config.Retry, 1)
 
 	var lastErr error
 	for i := range attempts {
-		if i > 0 && c.config.RetryDelay > 0 {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-time.After(c.config.RetryDelay):
+		if i > 0 {
+			c.retries.Add(ctx, 1, metric.WithAttributes(attrs...))
+			if c.config.RetryDelay > 0 {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(c.config.RetryDelay):
+				}
 			}
 		}
 
@@ -73,6 +125,11 @@ func (c *Client) Do(ctx context.Context, method, path string, headers http.Heade
 		}
 	}
 
+	if lastErr != nil {
+		span.SetStatus(codes.Error, lastErr.Error())
+		span.RecordError(lastErr)
+		c.errors.Add(ctx, 1, metric.WithAttributes(attrs...))
+	}
 	return lastErr
 }
 

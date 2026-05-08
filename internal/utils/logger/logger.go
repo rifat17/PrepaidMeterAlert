@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"os"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Format string
@@ -32,6 +34,13 @@ func (h *contextHandler) Enabled(ctx context.Context, level slog.Level) bool {
 func (h *contextHandler) Handle(ctx context.Context, r slog.Record) error {
 	if attrs, ok := ctx.Value(ctxKey{}).([]slog.Attr); ok {
 		r.AddAttrs(attrs...)
+	}
+	// Inject OTel trace/span IDs so logs can be correlated with traces in Grafana.
+	if sc := trace.SpanFromContext(ctx).SpanContext(); sc.IsValid() {
+		r.AddAttrs(
+			slog.String("trace_id", sc.TraceID().String()),
+			slog.String("span_id", sc.SpanID().String()),
+		)
 	}
 	return h.inner.Handle(ctx, r)
 }

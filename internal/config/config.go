@@ -10,9 +10,17 @@ import (
 )
 
 type Config struct {
-	Log   LogConfig
-	DB    DBConfig
-	Desco DescoConfig
+	Log       LogConfig
+	DB        DBConfig
+	Desco     DescoConfig
+	Telemetry TelemetryConfig
+}
+
+type TelemetryConfig struct {
+	Enabled      bool
+	OTLPEndpoint string
+	ServiceName  string
+	Environment  string
 }
 
 type LogConfig struct {
@@ -47,6 +55,12 @@ func Load() *Config {
 			Timeout:    parseDuration(getEnv("MA_DESCO_TIMEOUT", "10s")),
 			Retry:      parseInt(getEnv("MA_DESCO_RETRY", "3")),
 			RetryDelay: parseDuration(getEnv("MA_DESCO_RETRY_DELAY", "1s")),
+		},
+		Telemetry: TelemetryConfig{
+			Enabled:      parseBool(getEnv("MA_OTEL_ENABLED", "true")),
+			OTLPEndpoint: getEnv("MA_OTLP_ENDPOINT", "localhost:4317"),
+			ServiceName:  getEnv("MA_SERVICE_NAME", "meterbot"),
+			Environment:  getEnv("MA_ENVIRONMENT", "development"),
 		},
 	}
 	return instance
@@ -89,4 +103,9 @@ func parseInt(s string) int {
 		return 0
 	}
 	return n
+}
+
+func parseBool(s string) bool {
+	b, _ := strconv.ParseBool(s)
+	return b
 }
