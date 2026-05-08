@@ -12,6 +12,7 @@ type ProviderCode string
 const (
 	ProviderCodeNESCO ProviderCode = "nesco"
 	ProviderCodeDPDC  ProviderCode = "dpdc"
+	ProviderCodeDESCO ProviderCode = "desco"
 )
 
 type NotifyMode string
