@@ -12,9 +12,9 @@ type TimeStampedModel struct {
 	bun.BaseModel
 
 	ID        uuid.UUID  `bun:"id,pk,type:uuid,default:uuidv7()"`
-	CreatedAt *time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp,index:,type:brin"`
-	UpdatedAt *time.Time `bun:"updated_at,nullzero,notnull,default:current_timestamp,index:,type:brin"`
-	DeletedAt *time.Time `bun:"deleted_at,soft_delete,nullzero,index:,type:brin"`
+	CreatedAt *time.Time `bun:"created_at,nullzero,notnull,default:current_timestamp"`
+	UpdatedAt *time.Time `bun:"updated_at,nullzero,notnull,default:current_timestamp"`
+	DeletedAt *time.Time `bun:"deleted_at,soft_delete,nullzero"`
 }
 
 func (m *TimeStampedModel) BeforeAppendModel(ctx context.Context, query bun.Query) error {
