@@ -18,7 +18,8 @@ type Config struct {
 }
 
 type TelegramConfig struct {
-	Token string
+	Token     string
+	RateLimit float64
 }
 
 type TelemetryConfig struct {
@@ -61,6 +62,7 @@ func Load() *Config {
 			Timeout:    parseDuration(getEnv("MA_DESCO_TIMEOUT", "10s")),
 			Retry:      parseInt(getEnv("MA_DESCO_RETRY", "3")),
 			RetryDelay: parseDuration(getEnv("MA_DESCO_RETRY_DELAY", "1s")),
+			RateLimit:  parseFloat(getEnv("MA_DESCO_RATE_LIMIT", "5")),
 		},
 		Telemetry: TelemetryConfig{
 			Enabled:      parseBool(getEnv("MA_OTEL_ENABLED", "true")),
@@ -69,7 +71,8 @@ func Load() *Config {
 			Environment:  getEnv("MA_ENVIRONMENT", "development"),
 		},
 		Telegram: TelegramConfig{
-			Token: getEnv("MA_TELEGRAM_TOKEN", ""),
+			Token:     getEnv("MA_TELEGRAM_TOKEN", ""),
+			RateLimit: parseFloat(getEnv("MA_TELEGRAM_RATE_LIMIT", "30")),
 		},
 	}
 	return instance
@@ -117,4 +120,12 @@ func parseInt(s string) int {
 func parseBool(s string) bool {
 	b, _ := strconv.ParseBool(s)
 	return b
+}
+
+func parseFloat(s string) float64 {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return f
 }
