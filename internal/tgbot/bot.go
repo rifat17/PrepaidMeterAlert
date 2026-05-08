@@ -11,6 +11,7 @@ import (
 	"github.com/m4hi2/MeterAlertBot/internal/database/repo"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/handlers"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/keyboards"
+	"github.com/m4hi2/MeterAlertBot/internal/tgbot/middleware"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/state"
 	tele "gopkg.in/telebot.v3"
 )
@@ -42,6 +43,11 @@ func New(
 	if err != nil {
 		return nil, err
 	}
+	otelMW, err := middleware.NewOtel()
+	if err != nil {
+		return nil, err
+	}
+	b.Use(otelMW.Handle)
 	h := handlers.New(state.NewStore(), userRepo, meterRepo, providerRepo)
 	registerHandlers(b, h)
 	return &Bot{b: b}, nil

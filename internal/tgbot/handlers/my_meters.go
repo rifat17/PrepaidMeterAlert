@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func (h *Handlers) OnMyMeters(c tele.Context) error {
-	user, err := h.getOrCreateUser(context.Background(), c.Sender())
+	user, err := h.getOrCreateUser(teleCtx(c), c.Sender())
 	if err != nil {
 		return err
 	}
@@ -20,7 +19,7 @@ func (h *Handlers) OnMyMeters(c tele.Context) error {
 }
 
 func (h *Handlers) OnNavMeters(c tele.Context) error {
-	user, err := h.getOrCreateUser(context.Background(), c.Sender())
+	user, err := h.getOrCreateUser(teleCtx(c), c.Sender())
 	if err != nil {
 		return err
 	}
@@ -28,7 +27,7 @@ func (h *Handlers) OnNavMeters(c tele.Context) error {
 }
 
 func (h *Handlers) showMeterList(c tele.Context, user *models.User, edit bool) error {
-	meters, err := h.meterRepo.GetByUserID(context.Background(), user.ID)
+	meters, err := h.meterRepo.GetByUserID(teleCtx(c), user.ID)
 	if err != nil {
 		return err
 	}
@@ -62,7 +61,7 @@ func (h *Handlers) OnMeterSelect(c tele.Context) error {
 	if err != nil {
 		return c.Edit("Invalid meter. Please go back and try again.", keyboards.MainMenu())
 	}
-	meter, err := h.meterRepo.GetByID(context.Background(), id)
+	meter, err := h.meterRepo.GetByID(teleCtx(c), id)
 	if err != nil {
 		return c.Edit("Meter not found.", keyboards.MainMenu())
 	}
@@ -74,7 +73,7 @@ func (h *Handlers) OnMeterCheck(c tele.Context) error {
 	if err != nil {
 		return c.Edit("Invalid meter.", keyboards.MainMenu())
 	}
-	meter, err := h.meterRepo.GetByID(context.Background(), id)
+	meter, err := h.meterRepo.GetByID(teleCtx(c), id)
 	if err != nil {
 		return c.Edit("Meter not found.", keyboards.MainMenu())
 	}
@@ -94,7 +93,7 @@ func (h *Handlers) OnMeterDelete(c tele.Context) error {
 	if err != nil {
 		return c.Edit("Invalid meter.", keyboards.MainMenu())
 	}
-	meter, err := h.meterRepo.GetByID(context.Background(), id)
+	meter, err := h.meterRepo.GetByID(teleCtx(c), id)
 	if err != nil {
 		return c.Edit("Meter not found.", keyboards.MainMenu())
 	}
@@ -110,10 +109,10 @@ func (h *Handlers) OnMeterDeleteConfirm(c tele.Context) error {
 	if err != nil {
 		return c.Edit("Invalid meter.", keyboards.MainMenu())
 	}
-	if err := h.meterRepo.Delete(context.Background(), id); err != nil {
+	if err := h.meterRepo.Delete(teleCtx(c), id); err != nil {
 		return fmt.Errorf("delete meter: %w", err)
 	}
-	user, err := h.getOrCreateUser(context.Background(), c.Sender())
+	user, err := h.getOrCreateUser(teleCtx(c), c.Sender())
 	if err != nil {
 		return err
 	}

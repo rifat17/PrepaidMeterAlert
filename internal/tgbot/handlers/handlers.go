@@ -12,6 +12,18 @@ import (
 	tele "gopkg.in/telebot.v3"
 )
 
+// otelCtxKey matches the key set by the OTel middleware.
+const otelCtxKey = "otel_ctx"
+
+// teleCtx extracts the OTel-enriched context injected by the middleware.
+// Falls back to context.Background() so handlers work without the middleware.
+func teleCtx(c tele.Context) context.Context {
+	if ctx, ok := c.Get(otelCtxKey).(context.Context); ok {
+		return ctx
+	}
+	return context.Background()
+}
+
 type Handlers struct {
 	state        *state.Store
 	userRepo     repo.UserRepository

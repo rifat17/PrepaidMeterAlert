@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/keyboards"
@@ -9,7 +8,7 @@ import (
 )
 
 func (h *Handlers) OnStart(c tele.Context) error {
-	if _, err := h.getOrCreateUser(context.Background(), c.Sender()); err != nil {
+	if _, err := h.getOrCreateUser(teleCtx(c), c.Sender()); err != nil {
 		return err
 	}
 	h.state.Clear(c.Sender().ID)

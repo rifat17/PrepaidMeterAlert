@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,7 +12,7 @@ import (
 )
 
 func (h *Handlers) OnAddMeter(c tele.Context) error {
-	providers, err := h.providerRepo.GetActive(context.Background())
+	providers, err := h.providerRepo.GetActive(teleCtx(c))
 	if err != nil {
 		return err
 	}
@@ -111,7 +110,7 @@ func (h *Handlers) OnConfirm(c tele.Context) error {
 		return c.Edit("Cancelled. What would you like to do?", keyboards.MainMenu())
 	}
 
-	ctx := context.Background()
+	ctx := teleCtx(c)
 	user, err := h.getOrCreateUser(ctx, c.Sender())
 	if err != nil {
 		return err
