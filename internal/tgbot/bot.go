@@ -33,11 +33,19 @@ func New(
 		Token:  cfg.Token,
 		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
 		OnError: func(err error, c tele.Context) {
+			var username string
+			var chatID int64
+			if c.Sender() != nil {
+				username = c.Sender().Username
+			}
+			if c.Chat() != nil {
+				chatID = c.Chat().ID
+			}
 			if strings.Contains(err.Error(), "message is not modified") {
-				slog.Warn("telegram handler", "error", err, "chat_id", c.Chat().ID)
+				slog.Warn("telegram handler", "error", err, "chat_id", chatID, "username", username)
 				return
 			}
-			slog.Error("telegram handler error", "error", err, "chat_id", c.Chat().ID)
+			slog.Error("telegram handler error", "error", err, "chat_id", chatID, "username", username)
 		},
 	})
 	if err != nil {

@@ -71,13 +71,29 @@ func (o *Otel) Handle(next tele.HandlerFunc) tele.HandlerFunc {
 			attribute.String("tg.handler", handler),
 			attribute.String("tg.update_type", updateType),
 		}
-		spanAttrs := make([]attribute.KeyValue, len(baseAttrs), len(baseAttrs)+2)
+
+		var userID, chatID int64
+		var username string
+		spanAttrs := make([]attribute.KeyValue, len(baseAttrs), len(baseAttrs)+5)
 		copy(spanAttrs, baseAttrs)
 		if c.Sender() != nil {
-			spanAttrs = append(spanAttrs, attribute.Int64("tg.user_id", c.Sender().ID))
+			userID = c.Sender().ID
+			username = c.Sender().Username
+			spanAttrs = append(spanAttrs, attribute.Int64("tg.user_id", userID))
+			if username != "" {
+				spanAttrs = append(spanAttrs, attribute.String("tg.username", username))
+			}
 		}
 		if c.Chat() != nil {
-			spanAttrs = append(spanAttrs, attribute.Int64("tg.chat_id", c.Chat().ID))
+			chatID = c.Chat().ID
+			spanAttrs = append(spanAttrs, attribute.Int64("tg.chat_id", chatID))
+		}
+		text := incomingText(c)
+		if len(text) > 200 {
+			text = text[:200]
+		}
+		if text != "" {
+			spanAttrs = append(spanAttrs, attribute.String("tg.message_text", text))
 		}
 
 		ctx, span := o.tracer.Start(context.Background(), "tg.handle."+handler,
@@ -107,6 +123,17 @@ func (o *Otel) Handle(next tele.HandlerFunc) tele.HandlerFunc {
 
 		return err
 	}
+}
+
+// incomingText returns the user-supplied text from a message or callback.
+func incomingText(c tele.Context) string {
+	if cb := c.Callback(); cb != nil {
+		return cb.Data
+	}
+	if msg := c.Message(); msg != nil {
+		return msg.Text
+	}
+	return ""
 }
 
 // classifyUpdate returns (handlerName, updateType) for an incoming update.

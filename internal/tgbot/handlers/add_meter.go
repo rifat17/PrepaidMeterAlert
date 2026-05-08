@@ -2,8 +2,12 @@ package handlers
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/m4hi2/MeterAlertBot/internal/database/models"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/keyboards"
@@ -12,7 +16,12 @@ import (
 )
 
 func (h *Handlers) OnAddMeter(c tele.Context) error {
-	providers, err := h.providerRepo.GetActive(teleCtx(c))
+	ctx := teleCtx(c)
+	slog.InfoContext(ctx, "user initiated add meter",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+	)
+	providers, err := h.providerRepo.GetActive(ctx)
 	if err != nil {
 		return err
 	}
@@ -28,10 +37,16 @@ func (h *Handlers) OnAddMeter(c tele.Context) error {
 }
 
 func (h *Handlers) OnProvider(c tele.Context) error {
+	ctx := teleCtx(c)
 	conv, ok := h.state.Get(c.Sender().ID)
 	if !ok || conv.Step != state.StepAddProvider {
 		return c.Edit("Session expired. Please start over.", keyboards.MainMenu())
 	}
+	slog.InfoContext(ctx, "user selected provider",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+		"provider", c.Data(),
+	)
 	conv.Draft.Provider = c.Data()
 	conv.Step = state.StepAddAccount
 	h.state.Set(c.Sender().ID, conv)
@@ -43,10 +58,16 @@ func (h *Handlers) OnProvider(c tele.Context) error {
 }
 
 func (h *Handlers) OnSkip(c tele.Context) error {
+	ctx := teleCtx(c)
 	conv, ok := h.state.Get(c.Sender().ID)
 	if !ok {
 		return c.Edit("Session expired. Please start over.", keyboards.MainMenu())
 	}
+	slog.InfoContext(ctx, "user skipped step",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+		"step", string(conv.Step),
+	)
 	switch conv.Step {
 	case state.StepAddNumber:
 		conv.Draft.MeterNumber = ""
@@ -64,10 +85,16 @@ func (h *Handlers) OnSkip(c tele.Context) error {
 }
 
 func (h *Handlers) OnNotifyMode(c tele.Context) error {
+	ctx := teleCtx(c)
 	conv, ok := h.state.Get(c.Sender().ID)
 	if !ok || conv.Step != state.StepAddMode {
 		return c.Edit("Session expired. Please start over.", keyboards.MainMenu())
 	}
+	slog.InfoContext(ctx, "user selected notify mode",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+		"mode", c.Data(),
+	)
 	conv.Draft.NotifyMode = c.Data()
 	conv.Step = state.StepAddConfirm
 	h.state.Set(c.Sender().ID, conv)
@@ -101,16 +128,20 @@ func (h *Handlers) OnNotifyMode(c tele.Context) error {
 }
 
 func (h *Handlers) OnConfirm(c tele.Context) error {
+	ctx := teleCtx(c)
 	conv, ok := h.state.Get(c.Sender().ID)
 	if !ok || conv.Step != state.StepAddConfirm {
 		return c.Edit("Session expired. Please start over.", keyboards.MainMenu())
 	}
 	if c.Data() != "yes" {
+		slog.InfoContext(ctx, "user declined meter confirmation",
+			"username", c.Sender().Username,
+			"chat_id", c.Chat().ID,
+		)
 		h.state.Clear(c.Sender().ID)
 		return c.Edit("Cancelled. What would you like to do?", keyboards.MainMenu())
 	}
 
-	ctx := teleCtx(c)
 	user, err := h.getOrCreateUser(ctx, c.Sender())
 	if err != nil {
 		return err
@@ -133,6 +164,16 @@ func (h *Handlers) OnConfirm(c tele.Context) error {
 		return fmt.Errorf("create meter: %w", err)
 	}
 	h.state.Clear(c.Sender().ID)
+	slog.InfoContext(ctx, "meter added",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+		"provider", d.Provider,
+		"account_number", d.AccountNumber,
+	)
+	trace.SpanFromContext(ctx).AddEvent("meter.added", trace.WithAttributes(
+		attribute.String("provider", d.Provider),
+		attribute.String("account_number", d.AccountNumber),
+	))
 	name := d.AccountNumber
 	if d.MeterNumber != "" {
 		name = d.MeterNumber

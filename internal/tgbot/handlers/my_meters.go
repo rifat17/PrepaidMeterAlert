@@ -2,7 +2,11 @@ package handlers
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
+
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/google/uuid"
 	"github.com/m4hi2/MeterAlertBot/internal/database/models"
@@ -11,7 +15,12 @@ import (
 )
 
 func (h *Handlers) OnMyMeters(c tele.Context) error {
-	user, err := h.getOrCreateUser(teleCtx(c), c.Sender())
+	ctx := teleCtx(c)
+	slog.InfoContext(ctx, "user opened meter list",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+	)
+	user, err := h.getOrCreateUser(ctx, c.Sender())
 	if err != nil {
 		return err
 	}
@@ -19,7 +28,12 @@ func (h *Handlers) OnMyMeters(c tele.Context) error {
 }
 
 func (h *Handlers) OnNavMeters(c tele.Context) error {
-	user, err := h.getOrCreateUser(teleCtx(c), c.Sender())
+	ctx := teleCtx(c)
+	slog.InfoContext(ctx, "user navigated to meter list",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+	)
+	user, err := h.getOrCreateUser(ctx, c.Sender())
 	if err != nil {
 		return err
 	}
@@ -57,11 +71,17 @@ func (h *Handlers) showMeterList(c tele.Context, user *models.User, edit bool) e
 }
 
 func (h *Handlers) OnMeterSelect(c tele.Context) error {
+	ctx := teleCtx(c)
 	id, err := uuid.Parse(c.Data())
 	if err != nil {
 		return c.Edit("Invalid meter. Please go back and try again.", keyboards.MainMenu())
 	}
-	meter, err := h.meterRepo.GetByID(teleCtx(c), id)
+	slog.InfoContext(ctx, "user viewing meter detail",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+		"meter_id", id.String(),
+	)
+	meter, err := h.meterRepo.GetByID(ctx, id)
 	if err != nil {
 		return c.Edit("Meter not found.", keyboards.MainMenu())
 	}
@@ -69,11 +89,17 @@ func (h *Handlers) OnMeterSelect(c tele.Context) error {
 }
 
 func (h *Handlers) OnMeterCheck(c tele.Context) error {
+	ctx := teleCtx(c)
 	id, err := uuid.Parse(c.Data())
 	if err != nil {
 		return c.Edit("Invalid meter.", keyboards.MainMenu())
 	}
-	meter, err := h.meterRepo.GetByID(teleCtx(c), id)
+	slog.InfoContext(ctx, "user checking meter balance",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+		"meter_id", id.String(),
+	)
+	meter, err := h.meterRepo.GetByID(ctx, id)
 	if err != nil {
 		return c.Edit("Meter not found.", keyboards.MainMenu())
 	}
@@ -89,11 +115,17 @@ func (h *Handlers) OnMeterCheck(c tele.Context) error {
 }
 
 func (h *Handlers) OnMeterDelete(c tele.Context) error {
+	ctx := teleCtx(c)
 	id, err := uuid.Parse(c.Data())
 	if err != nil {
 		return c.Edit("Invalid meter.", keyboards.MainMenu())
 	}
-	meter, err := h.meterRepo.GetByID(teleCtx(c), id)
+	slog.InfoContext(ctx, "user initiated meter delete",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+		"meter_id", id.String(),
+	)
+	meter, err := h.meterRepo.GetByID(ctx, id)
 	if err != nil {
 		return c.Edit("Meter not found.", keyboards.MainMenu())
 	}
@@ -105,14 +137,23 @@ func (h *Handlers) OnMeterDelete(c tele.Context) error {
 }
 
 func (h *Handlers) OnMeterDeleteConfirm(c tele.Context) error {
+	ctx := teleCtx(c)
 	id, err := uuid.Parse(c.Data())
 	if err != nil {
 		return c.Edit("Invalid meter.", keyboards.MainMenu())
 	}
-	if err := h.meterRepo.Delete(teleCtx(c), id); err != nil {
+	if err := h.meterRepo.Delete(ctx, id); err != nil {
 		return fmt.Errorf("delete meter: %w", err)
 	}
-	user, err := h.getOrCreateUser(teleCtx(c), c.Sender())
+	slog.InfoContext(ctx, "meter deleted",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+		"meter_id", id.String(),
+	)
+	trace.SpanFromContext(ctx).AddEvent("meter.deleted", trace.WithAttributes(
+		attribute.String("meter_id", id.String()),
+	))
+	user, err := h.getOrCreateUser(ctx, c.Sender())
 	if err != nil {
 		return err
 	}
