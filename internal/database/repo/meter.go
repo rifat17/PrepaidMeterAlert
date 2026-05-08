@@ -12,6 +12,7 @@ type MeterRepository interface {
 	Create(ctx context.Context, meter *models.Meter) error
 	Update(ctx context.Context, meter *models.Meter) error
 	GetAll(ctx context.Context) ([]*models.Meter, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*models.Meter, error)
 	GetByUserID(ctx context.Context, userID uuid.UUID) ([]*models.Meter, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 }
@@ -35,6 +36,12 @@ func (r *meterRepo) Create(ctx context.Context, meter *models.Meter) error {
 func (r *meterRepo) Update(ctx context.Context, meter *models.Meter) error {
 	_, err := r.db.NewUpdate().Model(meter).WherePK().Exec(ctx)
 	return err
+}
+
+func (r *meterRepo) GetByID(ctx context.Context, id uuid.UUID) (*models.Meter, error) {
+	meter := &models.Meter{}
+	err := r.db.NewSelect().Model(meter).Where("id = ?", id).Scan(ctx)
+	return meter, err
 }
 
 func (r *meterRepo) GetAll(ctx context.Context) ([]*models.Meter, error) {
