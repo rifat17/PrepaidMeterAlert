@@ -29,4 +29,5 @@ jobs:
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no deploy@$VPS_HOST \
             "sudo mv /tmp/meterbot.new /opt/meterbot/meterbot && \
              sudo chmod +x /opt/meterbot/meterbot && \
+             sudo /opt/meterbot/run-migrate.sh && \
              sudo systemctl restart meterbot-serve"
