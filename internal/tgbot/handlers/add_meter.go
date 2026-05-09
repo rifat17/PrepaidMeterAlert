@@ -5,11 +5,13 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/m4hi2/MeterAlertBot/internal/database/models"
+	"github.com/m4hi2/MeterAlertBot/internal/datasources"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/keyboards"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/state"
 	tele "gopkg.in/telebot.v3"
@@ -53,7 +55,7 @@ func (h *Handlers) OnProvider(c tele.Context) error {
 	return c.Edit(
 		fmt.Sprintf("✅ Provider: *%s*\n\nEnter your account number:", strings.ToUpper(c.Data())),
 		tele.ModeMarkdown,
-		keyboards.CancelOnlyMenu(),
+		keyboards.SkipOrCancelMenu(),
 	)
 }
 
@@ -69,6 +71,11 @@ func (h *Handlers) OnSkip(c tele.Context) error {
 		"step", string(conv.Step),
 	)
 	switch conv.Step {
+	case state.StepAddAccount:
+		conv.Draft.AccountNumber = ""
+		conv.Step = state.StepAddNumber
+		h.state.Set(c.Sender().ID, conv)
+		return c.Edit("Enter your meter number:", keyboards.SkipOrCancelMenu())
 	case state.StepAddNumber:
 		conv.Draft.MeterNumber = ""
 		conv.Step = state.StepAddNickname
@@ -96,10 +103,31 @@ func (h *Handlers) OnNotifyMode(c tele.Context) error {
 		"mode", c.Data(),
 	)
 	conv.Draft.NotifyMode = c.Data()
+	d := conv.Draft
+
+	if fetcher, ok := h.fetchers.Get(models.ProviderCode(d.Provider)); ok {
+		bal, err := fetcher.GetBalance(ctx, datasources.Identifier{
+			AccountNumber: d.AccountNumber,
+			MeterNumber:   d.MeterNumber,
+		})
+		if err != nil {
+			slog.WarnContext(ctx, "meter verification failed",
+				"username", c.Sender().Username,
+				"provider", d.Provider,
+				"error", err,
+			)
+			h.state.Clear(c.Sender().ID)
+			return c.Edit("❌ Could not verify meter. Please check your account/meter number and try again.", keyboards.MainMenu())
+		}
+		conv.Draft.AccountNumber = bal.Identifier.AccountNumber
+		conv.Draft.MeterNumber = bal.Identifier.MeterNumber
+		conv.Draft.Balance = bal.Balance
+		d = conv.Draft
+	}
+
 	conv.Step = state.StepAddConfirm
 	h.state.Set(c.Sender().ID, conv)
 
-	d := conv.Draft
 	meterDisplay := d.MeterNumber
 	if meterDisplay == "" {
 		meterDisplay = "(not provided)"
@@ -115,8 +143,7 @@ func (h *Handlers) OnNotifyMode(c tele.Context) error {
 			"Meter #: %s\n"+
 			"Nickname: %s\n"+
 			"Threshold: %.0f BDT\n"+
-			"Alert mode: %s\n\n"+
-			"Confirm adding this meter?",
+			"Alert mode: %s\n",
 		strings.ToUpper(d.Provider),
 		d.AccountNumber,
 		meterDisplay,
@@ -124,6 +151,10 @@ func (h *Handlers) OnNotifyMode(c tele.Context) error {
 		d.Threshold,
 		d.NotifyMode,
 	)
+	if d.Balance > 0 {
+		summary += fmt.Sprintf("Current balance: *%.2f BDT*\n", d.Balance)
+	}
+	summary += "\nConfirm adding this meter?"
 	return c.Edit(summary, tele.ModeMarkdown, keyboards.ConfirmMenu())
 }
 
@@ -147,6 +178,13 @@ func (h *Handlers) OnConfirm(c tele.Context) error {
 		return err
 	}
 	d := conv.Draft
+	fetchStatus := models.FetchStatusPending
+	var lastFetchAt *time.Time
+	if d.Balance > 0 {
+		fetchStatus = models.FetchStatusSuccess
+		now := time.Now()
+		lastFetchAt = &now
+	}
 	meter := &models.Meter{
 		UserID:             user.ID,
 		ProviderCode:       models.ProviderCode(d.Provider),
@@ -155,7 +193,9 @@ func (h *Handlers) OnConfirm(c tele.Context) error {
 		Nickname:           d.Nickname,
 		Threshold:          d.Threshold,
 		NotifyMode:         models.NotifyMode(d.NotifyMode),
-		FetchStatus:        models.FetchStatusPending,
+		Balance:            d.Balance,
+		LastFetchAt:        lastFetchAt,
+		FetchStatus:        fetchStatus,
 		NotificationStatus: models.NStatusNotNeeded,
 	}
 	if err := h.meterRepo.Create(ctx, meter); err != nil {

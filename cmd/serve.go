@@ -10,7 +10,10 @@ import (
 
 	"github.com/m4hi2/MeterAlertBot/internal/config"
 	"github.com/m4hi2/MeterAlertBot/internal/database"
+	"github.com/m4hi2/MeterAlertBot/internal/database/models"
 	"github.com/m4hi2/MeterAlertBot/internal/database/repo"
+	"github.com/m4hi2/MeterAlertBot/internal/datasources"
+	"github.com/m4hi2/MeterAlertBot/internal/datasources/desco"
 	"github.com/m4hi2/MeterAlertBot/internal/telemetry"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot"
 	"github.com/muesli/coral"
@@ -64,7 +67,11 @@ func runServe(cmd *coral.Command, _ []string) error {
 	providerRepo := repo.NewProviderRepo(db)
 	_ = repo.NewNotificationLogRepo(db)
 
-	bot, err := tgbot.New(cfg.Telegram, userRepo, meterRepo, providerRepo)
+	fetchers := datasources.Registry{
+		models.ProviderCodeDESCO: desco.NewService(cfg.Desco),
+	}
+
+	bot, err := tgbot.New(cfg.Telegram, userRepo, meterRepo, providerRepo, fetchers)
 	if err != nil {
 		return err
 	}

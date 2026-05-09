@@ -22,6 +22,7 @@ type MeterDraft struct {
 	Nickname      string
 	Threshold     float64
 	NotifyMode    string
+	Balance       float64
 }
 
 type Conversation struct {

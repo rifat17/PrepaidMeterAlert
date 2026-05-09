@@ -9,6 +9,7 @@ import (
 
 	"github.com/m4hi2/MeterAlertBot/internal/config"
 	"github.com/m4hi2/MeterAlertBot/internal/database/repo"
+	"github.com/m4hi2/MeterAlertBot/internal/datasources"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/handlers"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/keyboards"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/middleware"
@@ -25,6 +26,7 @@ func New(
 	userRepo repo.UserRepository,
 	meterRepo repo.MeterRepository,
 	providerRepo repo.ProviderRepository,
+	fetchers datasources.Registry,
 ) (*Bot, error) {
 	if cfg.Token == "" {
 		return nil, errors.New("MA_TELEGRAM_TOKEN is required")
@@ -56,7 +58,7 @@ func New(
 		return nil, err
 	}
 	b.Use(otelMW.Handle)
-	h := handlers.New(state.NewStore(), userRepo, meterRepo, providerRepo)
+	h := handlers.New(state.NewStore(), userRepo, meterRepo, providerRepo, fetchers)
 	registerHandlers(b, h)
 	return &Bot{b: b}, nil
 }

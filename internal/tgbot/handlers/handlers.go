@@ -8,6 +8,7 @@ import (
 
 	"github.com/m4hi2/MeterAlertBot/internal/database/models"
 	"github.com/m4hi2/MeterAlertBot/internal/database/repo"
+	"github.com/m4hi2/MeterAlertBot/internal/datasources"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/state"
 	tele "gopkg.in/telebot.v3"
 )
@@ -29,6 +30,7 @@ type Handlers struct {
 	userRepo     repo.UserRepository
 	meterRepo    repo.MeterRepository
 	providerRepo repo.ProviderRepository
+	fetchers     datasources.Registry
 }
 
 func New(
@@ -36,12 +38,14 @@ func New(
 	userRepo repo.UserRepository,
 	meterRepo repo.MeterRepository,
 	providerRepo repo.ProviderRepository,
+	fetchers datasources.Registry,
 ) *Handlers {
 	return &Handlers{
 		state:        st,
 		userRepo:     userRepo,
 		meterRepo:    meterRepo,
 		providerRepo: providerRepo,
+		fetchers:     fetchers,
 	}
 }
 
