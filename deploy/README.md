@@ -3,6 +3,8 @@
 Production deployment targets a bare-metal Ubuntu 24.04 VPS.
 The app consists of two processes managed by systemd, a PostgreSQL 18 database, and Grafana Alloy shipping telemetry to Grafana Cloud.
 
+*There might be some mistakes since I did some experimentation while setting up, please open an issue if you find something not working*
+
 ## Architecture
 
 ```mermaid
@@ -276,6 +278,7 @@ sudo systemctl status alloy                 # Alloy shipping telemetry
 ```
 
 Grafana Cloud:
+
 - **Explore → Logs** — filter `{app="meterbot"}` for live log stream
 - **Explore → Metrics** — query `alerter_fetch_success_total`
 - **Explore → Traces** — look for `alerter.run` spans after 01:00 UTC

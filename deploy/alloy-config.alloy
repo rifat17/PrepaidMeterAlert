@@ -46,21 +46,26 @@ prometheus.remote_write "grafana_cloud" {
 }
 
 // ── Logs → Grafana Cloud Loki (reads from systemd journal) ────────────────
-loki.relabel "journal_relabel" {
+// One source per unit — avoids OR syntax in matches which Alloy does not support
+loki.source.journal "meterbot_serve" {
   forward_to = [loki.write.grafana_cloud.receiver]
+  matches    = "_SYSTEMD_UNIT=meterbot-serve.service"
 
-  rule {
-    source_labels = ["__journal__systemd_unit"]
-    target_label  = "unit"
+  labels = {
+    app  = "meterbot",
+    env  = "production",
+    unit = "meterbot-serve.service",
   }
 }
 
-loki.source.journal "meterbot" {
-  forward_to = [loki.relabel.journal_relabel.receiver]
+loki.source.journal "meterbot_alert" {
+  forward_to = [loki.write.grafana_cloud.receiver]
+  matches    = "_SYSTEMD_UNIT=meterbot-alert.service"
 
   labels = {
-    app = "meterbot",
-    env = "production",
+    app  = "meterbot",
+    env  = "production",
+    unit = "meterbot-alert.service",
   }
 }
 
