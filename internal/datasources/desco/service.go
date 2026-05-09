@@ -58,6 +58,9 @@ func (s *Service) GetBalance(ctx context.Context, id datasources.Identifier) (da
 		return datasources.Balance{}, fmt.Errorf("get balance: upstream code %d: %s", resp.Code, resp.Desc)
 	}
 
+	id.AccountNumber = resp.Data.AccountNo
+	id.MeterNumber = resp.Data.MeterNo
+
 	return datasources.Balance{
 		Identifier: id,
 		Balance:    resp.Data.Balance,
