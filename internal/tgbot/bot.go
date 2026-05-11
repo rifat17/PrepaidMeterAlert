@@ -86,7 +86,7 @@ func registerHandlers(b *tele.Bot, h *handlers.Handlers) {
 	b.Handle(&tele.InlineButton{Unique: keyboards.UniqConfirm}, h.OnConfirm)
 
 	b.Handle(&tele.InlineButton{Unique: keyboards.UniqMeterSelect}, h.OnMeterSelect)
-	b.Handle(&tele.InlineButton{Unique: keyboards.UniqMeterCheck}, h.OnMeterCheck)
+	b.Handle(&tele.InlineButton{Unique: keyboards.UniqMeterEditThreshold}, h.OnMeterEditThreshold)
 	b.Handle(&tele.InlineButton{Unique: keyboards.UniqMeterDelete}, h.OnMeterDelete)
 	b.Handle(&tele.InlineButton{Unique: keyboards.UniqMeterDeleteConfirm}, h.OnMeterDeleteConfirm)
 

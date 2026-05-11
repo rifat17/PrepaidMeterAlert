@@ -35,6 +35,8 @@ func (h *Handlers) OnText(c tele.Context) error {
 		return h.handleAddNickname(c, conv)
 	case state.StepAddThreshold:
 		return h.handleAddThreshold(c, conv)
+	case state.StepEditThreshold:
+		return h.handleEditThreshold(c, conv)
 	default:
 		return c.Send("Please use the buttons to continue.", keyboards.CancelOnlyMenu())
 	}

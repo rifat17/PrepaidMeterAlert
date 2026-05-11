@@ -5,14 +5,15 @@ import "sync"
 type Step string
 
 const (
-	StepIdle         Step = ""
-	StepAddProvider  Step = "add:provider"
-	StepAddNumber    Step = "add:number"
-	StepAddAccount   Step = "add:account"
-	StepAddNickname  Step = "add:nickname"
-	StepAddThreshold Step = "add:threshold"
-	StepAddMode      Step = "add:mode"
-	StepAddConfirm   Step = "add:confirm"
+	StepIdle          Step = ""
+	StepAddProvider   Step = "add:provider"
+	StepAddNumber     Step = "add:number"
+	StepAddAccount    Step = "add:account"
+	StepAddNickname   Step = "add:nickname"
+	StepAddThreshold  Step = "add:threshold"
+	StepAddMode       Step = "add:mode"
+	StepAddConfirm    Step = "add:confirm"
+	StepEditThreshold Step = "edit:threshold"
 )
 
 type MeterDraft struct {
@@ -26,8 +27,9 @@ type MeterDraft struct {
 }
 
 type Conversation struct {
-	Step  Step
-	Draft MeterDraft
+	Step    Step
+	Draft   MeterDraft
+	MeterID string
 }
 
 type Store struct {

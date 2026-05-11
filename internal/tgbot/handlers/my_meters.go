@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -11,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/m4hi2/MeterAlertBot/internal/database/models"
 	"github.com/m4hi2/MeterAlertBot/internal/tgbot/keyboards"
+	"github.com/m4hi2/MeterAlertBot/internal/tgbot/state"
 	tele "gopkg.in/telebot.v3"
 )
 
@@ -88,30 +90,65 @@ func (h *Handlers) OnMeterSelect(c tele.Context) error {
 	return c.Edit(meterDetail(meter), tele.ModeMarkdown, keyboards.MeterActionsMenu(id.String()))
 }
 
-func (h *Handlers) OnMeterCheck(c tele.Context) error {
+func (h *Handlers) OnMeterEditThreshold(c tele.Context) error {
 	ctx := teleCtx(c)
 	id, err := uuid.Parse(c.Data())
 	if err != nil {
 		return c.Edit("Invalid meter.", keyboards.MainMenu())
 	}
-	slog.InfoContext(ctx, "user checking meter balance",
-		"username", c.Sender().Username,
-		"chat_id", c.Chat().ID,
-		"meter_id", id.String(),
-	)
 	meter, err := h.meterRepo.GetByID(ctx, id)
 	if err != nil {
 		return c.Edit("Meter not found.", keyboards.MainMenu())
 	}
-	lastChecked := "never"
-	if meter.LastFetchAt != nil {
-		lastChecked = meter.LastFetchAt.Format("02 Jan 2006 15:04")
-	}
-	text := fmt.Sprintf(
-		"⚡ *%s*\n\nCurrent balance: *%.2f BDT*\nLast checked: %s",
-		meterLabel(meter), meter.Balance, lastChecked,
+	slog.InfoContext(ctx, "user editing meter threshold",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+		"meter_id", id.String(),
 	)
-	return c.Edit(text, tele.ModeMarkdown, keyboards.MeterActionsMenu(id.String()))
+	h.state.Set(c.Sender().ID, state.Conversation{
+		Step:    state.StepEditThreshold,
+		MeterID: id.String(),
+	})
+	return c.Send(
+		fmt.Sprintf("Enter new threshold amount in BDT (current: *%.0f BDT*):", meter.Threshold),
+		tele.ModeMarkdown,
+		keyboards.CancelOnlyMenu(),
+	)
+}
+
+func (h *Handlers) handleEditThreshold(c tele.Context, conv state.Conversation) error {
+	ctx := teleCtx(c)
+	val, err := strconv.ParseFloat(c.Text(), 64)
+	if err != nil || val <= 0 {
+		return c.Send("Please enter a valid positive number (e.g. 200):", keyboards.CancelOnlyMenu())
+	}
+	id, err := uuid.Parse(conv.MeterID)
+	if err != nil {
+		h.state.Clear(c.Sender().ID)
+		return c.Send("Something went wrong. Please try again.", keyboards.MainMenu())
+	}
+	meter, err := h.meterRepo.GetByID(ctx, id)
+	if err != nil {
+		h.state.Clear(c.Sender().ID)
+		return c.Send("Meter not found.", keyboards.MainMenu())
+	}
+	meter.Threshold = val
+	if err := h.meterRepo.Update(ctx, meter); err != nil {
+		h.state.Clear(c.Sender().ID)
+		return fmt.Errorf("update threshold: %w", err)
+	}
+	slog.InfoContext(ctx, "meter threshold updated",
+		"username", c.Sender().Username,
+		"chat_id", c.Chat().ID,
+		"meter_id", id.String(),
+		"threshold", val,
+	)
+	h.state.Clear(c.Sender().ID)
+	return c.Send(
+		fmt.Sprintf("✅ Threshold updated.\n\n%s", meterDetail(meter)),
+		tele.ModeMarkdown,
+		keyboards.MeterActionsMenu(id.String()),
+	)
 }
 
 func (h *Handlers) OnMeterDelete(c tele.Context) error {

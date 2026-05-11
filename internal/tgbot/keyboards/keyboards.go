@@ -16,7 +16,7 @@ const (
 	UniqSkip               = "skip"
 	UniqCancel             = "cancel"
 	UniqMeterSelect        = "meter_select"
-	UniqMeterCheck         = "meter_check"
+	UniqMeterEditThreshold = "meter_edit_threshold"
 	UniqMeterDelete        = "meter_delete"
 	UniqMeterDeleteConfirm = "meter_delete_confirm"
 	UniqNavMain            = "nav_main"
@@ -101,7 +101,7 @@ func MeterListMenu(meters []MeterButton) *tele.ReplyMarkup {
 func MeterActionsMenu(meterID string) *tele.ReplyMarkup {
 	m := &tele.ReplyMarkup{}
 	m.Inline(
-		m.Row(m.Data("⚡ Check Balance", UniqMeterCheck, meterID)),
+		m.Row(m.Data("✏️ Edit Threshold", UniqMeterEditThreshold, meterID)),
 		m.Row(m.Data("🗑️ Delete", UniqMeterDelete, meterID)),
 		m.Row(
 			m.Data("← Back", UniqNavMeters),
