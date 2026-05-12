@@ -21,6 +21,7 @@ const (
 	UniqMeterDeleteConfirm = "meter_delete_confirm"
 	UniqNavMain            = "nav_main"
 	UniqNavMeters          = "nav_meters"
+	UniqFeedback           = "feedback"
 )
 
 func MainMenu() *tele.ReplyMarkup {
@@ -30,6 +31,7 @@ func MainMenu() *tele.ReplyMarkup {
 			m.Data("➕ Add Meter", UniqAddMeter),
 			m.Data("📋 My Meters", UniqMyMeters),
 		),
+		m.Row(m.Data("💬 Feedback", UniqFeedback)),
 		m.Row(m.Data("❓ Help", UniqHelp)),
 	)
 	return m

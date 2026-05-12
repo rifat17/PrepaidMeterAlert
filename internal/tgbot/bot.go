@@ -26,6 +26,7 @@ func New(
 	userRepo repo.UserRepository,
 	meterRepo repo.MeterRepository,
 	providerRepo repo.ProviderRepository,
+	feedbackRepo repo.FeedbackRepository,
 	fetchers datasources.Registry,
 ) (*Bot, error) {
 	if cfg.Token == "" {
@@ -58,7 +59,7 @@ func New(
 		return nil, err
 	}
 	b.Use(otelMW.Handle)
-	h := handlers.New(state.NewStore(), userRepo, meterRepo, providerRepo, fetchers)
+	h := handlers.New(state.NewStore(), userRepo, meterRepo, providerRepo, feedbackRepo, fetchers)
 	registerHandlers(b, h)
 	return &Bot{b: b}, nil
 }
@@ -89,6 +90,8 @@ func registerHandlers(b *tele.Bot, h *handlers.Handlers) {
 	b.Handle(&tele.InlineButton{Unique: keyboards.UniqMeterEditThreshold}, h.OnMeterEditThreshold)
 	b.Handle(&tele.InlineButton{Unique: keyboards.UniqMeterDelete}, h.OnMeterDelete)
 	b.Handle(&tele.InlineButton{Unique: keyboards.UniqMeterDeleteConfirm}, h.OnMeterDeleteConfirm)
+
+	b.Handle(&tele.InlineButton{Unique: keyboards.UniqFeedback}, h.OnFeedback)
 
 	b.Handle(&tele.InlineButton{Unique: keyboards.UniqNavMain}, h.OnNavMain)
 	b.Handle(&tele.InlineButton{Unique: keyboards.UniqNavMeters}, h.OnNavMeters)

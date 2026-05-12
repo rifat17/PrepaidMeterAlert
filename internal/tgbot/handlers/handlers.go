@@ -30,6 +30,7 @@ type Handlers struct {
 	userRepo     repo.UserRepository
 	meterRepo    repo.MeterRepository
 	providerRepo repo.ProviderRepository
+	feedbackRepo repo.FeedbackRepository
 	fetchers     datasources.Registry
 }
 
@@ -38,6 +39,7 @@ func New(
 	userRepo repo.UserRepository,
 	meterRepo repo.MeterRepository,
 	providerRepo repo.ProviderRepository,
+	feedbackRepo repo.FeedbackRepository,
 	fetchers datasources.Registry,
 ) *Handlers {
 	return &Handlers{
@@ -45,6 +47,7 @@ func New(
 		userRepo:     userRepo,
 		meterRepo:    meterRepo,
 		providerRepo: providerRepo,
+		feedbackRepo: feedbackRepo,
 		fetchers:     fetchers,
 	}
 }

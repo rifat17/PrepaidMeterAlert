@@ -65,13 +65,14 @@ func runServe(cmd *coral.Command, _ []string) error {
 	userRepo := repo.NewUserRepo(db)
 	meterRepo := repo.NewMeterRepo(db)
 	providerRepo := repo.NewProviderRepo(db)
+	feedbackRepo := repo.NewFeedbackRepo(db)
 	_ = repo.NewNotificationLogRepo(db)
 
 	fetchers := datasources.Registry{
 		models.ProviderCodeDESCO: desco.NewService(cfg.Desco),
 	}
 
-	bot, err := tgbot.New(cfg.Telegram, userRepo, meterRepo, providerRepo, fetchers)
+	bot, err := tgbot.New(cfg.Telegram, userRepo, meterRepo, providerRepo, feedbackRepo, fetchers)
 	if err != nil {
 		return err
 	}
