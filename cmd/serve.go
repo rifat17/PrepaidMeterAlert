@@ -61,7 +61,7 @@ func runServe(cmd *coral.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	db.AddQueryHook(bunHook)
+	db = db.WithQueryHook(bunHook)
 
 	userRepo := repo.NewUserRepo(db)
 	meterRepo := repo.NewMeterRepo(db)
