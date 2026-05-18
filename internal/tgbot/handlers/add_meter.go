@@ -21,6 +21,7 @@ func (h *Handlers) OnAddMeter(c tele.Context) error {
 	ctx := teleCtx(c)
 	slog.InfoContext(ctx, "user initiated add meter",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 	)
 	providers, err := h.providerRepo.GetActive(ctx)
@@ -46,6 +47,7 @@ func (h *Handlers) OnProvider(c tele.Context) error {
 	}
 	slog.InfoContext(ctx, "user selected provider",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 		"provider", c.Data(),
 	)
@@ -67,6 +69,7 @@ func (h *Handlers) OnSkip(c tele.Context) error {
 	}
 	slog.InfoContext(ctx, "user skipped step",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 		"step", string(conv.Step),
 	)
@@ -99,6 +102,7 @@ func (h *Handlers) OnNotifyMode(c tele.Context) error {
 	}
 	slog.InfoContext(ctx, "user selected notify mode",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 		"mode", c.Data(),
 	)
@@ -113,6 +117,7 @@ func (h *Handlers) OnNotifyMode(c tele.Context) error {
 		if err != nil {
 			slog.WarnContext(ctx, "meter verification failed",
 				"username", c.Sender().Username,
+				"user_id", c.Sender().ID,
 				"provider", d.Provider,
 				"error", err,
 			)
@@ -167,6 +172,7 @@ func (h *Handlers) OnConfirm(c tele.Context) error {
 	if c.Data() != "yes" {
 		slog.InfoContext(ctx, "user declined meter confirmation",
 			"username", c.Sender().Username,
+			"user_id", c.Sender().ID,
 			"chat_id", c.Chat().ID,
 		)
 		h.state.Clear(c.Sender().ID)
@@ -206,6 +212,7 @@ func (h *Handlers) OnConfirm(c tele.Context) error {
 	h.state.Clear(c.Sender().ID)
 	slog.InfoContext(ctx, "meter added",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 		"provider", d.Provider,
 		"account_number", d.AccountNumber,

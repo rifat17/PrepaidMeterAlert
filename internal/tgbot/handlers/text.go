@@ -19,6 +19,7 @@ func (h *Handlers) OnText(c tele.Context) error {
 	slog.InfoContext(ctx, "tg: text input",
 		"step", step,
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 		"input", c.Text(),
 	)

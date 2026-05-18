@@ -16,6 +16,7 @@ func (h *Handlers) OnStart(c tele.Context) error {
 	h.state.Clear(c.Sender().ID)
 	slog.InfoContext(ctx, "user started bot",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 	)
 	return c.Send(
@@ -28,6 +29,7 @@ func (h *Handlers) OnHelp(c tele.Context) error {
 	ctx := teleCtx(c)
 	slog.InfoContext(ctx, "user opened help",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 	)
 	text := "ℹ️ *PrepaidMeter Alert Bot*\n\n" +
@@ -42,6 +44,7 @@ func (h *Handlers) OnCancel(c tele.Context) error {
 	conv, _ := h.state.Get(c.Sender().ID)
 	slog.InfoContext(ctx, "user cancelled",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 		"from_step", string(conv.Step),
 	)
@@ -53,6 +56,7 @@ func (h *Handlers) OnNavMain(c tele.Context) error {
 	ctx := teleCtx(c)
 	slog.InfoContext(ctx, "user navigated to main menu",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 	)
 	h.state.Clear(c.Sender().ID)

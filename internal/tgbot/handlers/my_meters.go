@@ -20,6 +20,7 @@ func (h *Handlers) OnMyMeters(c tele.Context) error {
 	ctx := teleCtx(c)
 	slog.InfoContext(ctx, "user opened meter list",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 	)
 	user, err := h.getOrCreateUser(ctx, c.Sender())
@@ -33,6 +34,7 @@ func (h *Handlers) OnNavMeters(c tele.Context) error {
 	ctx := teleCtx(c)
 	slog.InfoContext(ctx, "user navigated to meter list",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 	)
 	user, err := h.getOrCreateUser(ctx, c.Sender())
@@ -80,6 +82,7 @@ func (h *Handlers) OnMeterSelect(c tele.Context) error {
 	}
 	slog.InfoContext(ctx, "user viewing meter detail",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 		"meter_id", id.String(),
 	)
@@ -102,6 +105,7 @@ func (h *Handlers) OnMeterEditThreshold(c tele.Context) error {
 	}
 	slog.InfoContext(ctx, "user editing meter threshold",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 		"meter_id", id.String(),
 	)
@@ -139,6 +143,7 @@ func (h *Handlers) handleEditThreshold(c tele.Context, conv state.Conversation) 
 	}
 	slog.InfoContext(ctx, "meter threshold updated",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 		"meter_id", id.String(),
 		"threshold", val,
@@ -159,6 +164,7 @@ func (h *Handlers) OnMeterDelete(c tele.Context) error {
 	}
 	slog.InfoContext(ctx, "user initiated meter delete",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 		"meter_id", id.String(),
 	)
@@ -184,6 +190,7 @@ func (h *Handlers) OnMeterDeleteConfirm(c tele.Context) error {
 	}
 	slog.InfoContext(ctx, "meter deleted",
 		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
 		"chat_id", c.Chat().ID,
 		"meter_id", id.String(),
 	)
