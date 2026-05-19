@@ -238,7 +238,8 @@ func meterDetail(m *models.Meter) string {
 			"Balance: *%.2f BDT*\n"+
 			"Threshold: %.0f BDT\n"+
 			"Alert mode: %s\n"+
-			"Last checked: %s",
+			"Last checked: %s\n"+
+			"%s only updates meter balance once a day, real time balance is not possible.",
 		provider,
 		m.AccountNumber,
 		meterDisplay,
@@ -247,5 +248,6 @@ func meterDetail(m *models.Meter) string {
 		m.Threshold,
 		string(m.NotifyMode),
 		lastChecked,
+		provider,
 	)
 }
