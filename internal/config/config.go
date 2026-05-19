@@ -14,6 +14,7 @@ type Config struct {
 	DB        DBConfig
 	Desco     DescoConfig
 	Nesco     NescoConfig
+	Dpdc      DpdcConfig
 	Telemetry TelemetryConfig
 	Telegram  TelegramConfig
 }
@@ -55,6 +56,15 @@ type NescoConfig struct {
 	RateLimit  float64
 }
 
+type DpdcConfig struct {
+	AuthURL      string
+	UsageURL     string
+	Timeout      time.Duration
+	ClientID     string
+	ClientSecret string
+	TenantCode   string
+}
+
 var instance *Config
 
 func Load() *Config {
@@ -79,6 +89,14 @@ func Load() *Config {
 			Retry:      parseInt(getEnv("MA_NESCO_RETRY", "3")),
 			RetryDelay: parseDuration(getEnv("MA_NESCO_RETRY_DELAY", "1s")),
 			RateLimit:  parseFloat(getEnv("MA_NESCO_RATE_LIMIT", "2")),
+		},
+		Dpdc: DpdcConfig{
+			AuthURL:      getEnv("MA_DPDC_AUTH_URL", "https://amiapp.dpdc.org.bd/auth/login/generate-bearer"),
+			UsageURL:     getEnv("MA_DPDC_USAGE_URL", "https://amiapp.dpdc.org.bd/usage/usage-service"),
+			Timeout:      parseDuration(getEnv("MA_DPDC_TIMEOUT", "15s")),
+			ClientID:     getEnv("MA_DPDC_CLIENT_ID", "auth-ui"),
+			ClientSecret: getEnv("MA_DPDC_CLIENT_SECRET", ""),
+			TenantCode:   getEnv("MA_DPDC_TENANT_CODE", "DPDC"),
 		},
 		Telemetry: TelemetryConfig{
 			Enabled:      parseBool(getEnv("MA_OTEL_ENABLED", "false")),
