@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - master
-#    paths:
-#      - 'go.mod'
-#      - 'go.sum'
+    paths:
+      - 'go.mod'
+      - 'go.sum'
 
 jobs:
   cache:
