@@ -22,6 +22,7 @@ const (
 	UniqNavMain            = "nav_main"
 	UniqNavMeters          = "nav_meters"
 	UniqFeedback           = "feedback"
+	UniqMeterRename        = "meter_rename"
 )
 
 func MainMenu() *tele.ReplyMarkup {
@@ -104,6 +105,7 @@ func MeterActionsMenu(meterID string) *tele.ReplyMarkup {
 	m := &tele.ReplyMarkup{}
 	m.Inline(
 		m.Row(m.Data("✏️ Edit Threshold", UniqMeterEditThreshold, meterID)),
+		m.Row(m.Data("✏️ Rename", UniqMeterRename, meterID)),
 		m.Row(m.Data("🗑️ Delete", UniqMeterDelete, meterID)),
 		m.Row(
 			m.Data("← Back", UniqNavMeters),

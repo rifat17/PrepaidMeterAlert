@@ -34,6 +34,8 @@ func (h *Handlers) OnText(c tele.Context) error {
 		return h.handleAddAccount(c, conv)
 	case state.StepAddNickname:
 		return h.handleAddNickname(c, conv)
+	case state.StepEditNickname:
+		return h.handleEditNickname(c, conv)
 	case state.StepAddThreshold:
 		return h.handleAddThreshold(c, conv)
 	case state.StepEditThreshold:
