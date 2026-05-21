@@ -15,6 +15,7 @@ const (
 	StepAddConfirm    Step = "add:confirm"
 	StepEditThreshold Step = "edit:threshold"
 	StepFeedback      Step = "feedback:text"
+	StepEditNickname  Step = "edit:nickname"
 )
 
 type MeterDraft struct {

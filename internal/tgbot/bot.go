@@ -96,5 +96,7 @@ func registerHandlers(b *tele.Bot, h *handlers.Handlers) {
 	b.Handle(&tele.InlineButton{Unique: keyboards.UniqNavMain}, h.OnNavMain)
 	b.Handle(&tele.InlineButton{Unique: keyboards.UniqNavMeters}, h.OnNavMeters)
 
+	b.Handle(&tele.InlineButton{Unique: keyboards.UniqMeterRename}, h.OnMeterRename)
+
 	b.Handle(tele.OnText, h.OnText)
 }

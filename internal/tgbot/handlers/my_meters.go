@@ -156,6 +156,82 @@ func (h *Handlers) handleEditThreshold(c tele.Context, conv state.Conversation) 
 	)
 }
 
+func (h *Handlers) OnMeterRename(c tele.Context) error {
+	ctx := teleCtx(c)
+	id, err := uuid.Parse(c.Data())
+	if err != nil {
+		return c.Edit("Invalid meter.", keyboards.MainMenu())
+	}
+	user, err := h.getOrCreateUser(ctx, c.Sender())
+	if err != nil {
+		return err
+	}
+	meter, err := h.meterRepo.GetByID(ctx, id)
+	if err != nil {
+		return c.Edit("Meter not found.", keyboards.MainMenu())
+	}
+	if meter.UserID != user.ID {
+		h.state.Clear(c.Sender().ID)
+		return c.Edit("You don't have permission to edit this meter.", keyboards.MainMenu())
+	}
+	slog.InfoContext(ctx, "user editing meter nickname",
+		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
+		"chat_id", c.Chat().ID,
+		"meter_id", id.String(),
+	)
+	h.state.Set(c.Sender().ID, state.Conversation{
+		Step:    state.StepEditNickname,
+		MeterID: id.String(),
+	})
+	return c.Send(
+		fmt.Sprintf("Enter new nickname for the meter (current: *%s*):", meter.Nickname),
+		tele.ModeMarkdown,
+		keyboards.CancelOnlyMenu(),
+	)
+}
+
+func (h *Handlers) handleEditNickname(c tele.Context, conv state.Conversation) error {
+	ctx := teleCtx(c)
+	id, err := uuid.Parse(conv.MeterID)
+	if err != nil {
+		h.state.Clear(c.Sender().ID)
+		return c.Send("Something went wrong. Please try again.", keyboards.MainMenu())
+	}
+	meter, err := h.meterRepo.GetByID(ctx, id)
+	if err != nil {
+		h.state.Clear(c.Sender().ID)
+		return c.Send("Meter not found.", keyboards.MainMenu())
+	}
+	newNickname := strings.TrimSpace(c.Text())
+	if newNickname == "" {
+		newNickname = meter.Nickname // keep existing if input is empty
+		h.state.Clear(c.Sender().ID)
+		return c.Send("Nickname Unchanged.\n\n"+meterDetail(meter), tele.ModeMarkdown, keyboards.MeterActionsMenu(id.String()))
+	}
+	if len(newNickname) > 20 {
+		return c.Send("Nickname must be 20 characters or less. Please try again:", keyboards.CancelOnlyMenu())
+	}
+	meter.Nickname = newNickname
+	if err := h.meterRepo.Update(ctx, meter); err != nil {
+		h.state.Clear(c.Sender().ID)
+		return fmt.Errorf("update nickname: %w", err)
+	}
+	slog.InfoContext(ctx, "meter nickname updated",
+		"username", c.Sender().Username,
+		"user_id", c.Sender().ID,
+		"chat_id", c.Chat().ID,
+		"meter_id", id.String(),
+		"nickname", newNickname,
+	)
+	h.state.Clear(c.Sender().ID)
+	return c.Send(
+		fmt.Sprintf("✅ Nickname updated.\n\n%s", meterDetail(meter)),
+		tele.ModeMarkdown,
+		keyboards.MeterActionsMenu(id.String()),
+	)
+}
+
 func (h *Handlers) OnMeterDelete(c tele.Context) error {
 	ctx := teleCtx(c)
 	id, err := uuid.Parse(c.Data())
