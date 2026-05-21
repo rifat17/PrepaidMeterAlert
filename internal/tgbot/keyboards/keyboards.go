@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	RepoURL      = "https://github.com/m4hi2/PrepaidMeterAlert"
-	UniqAddMeter = "add_meter"
+	RepoURL                = "https://github.com/m4hi2/PrepaidMeterAlert"
+	UniqAddMeter           = "add_meter"
 	UniqMyMeters           = "my_meters"
 	UniqHelp               = "help"
 	UniqProvider           = "provider"
