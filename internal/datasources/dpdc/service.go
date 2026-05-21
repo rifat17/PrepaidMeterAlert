@@ -1,9 +1,7 @@
 package dpdc
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -20,17 +18,25 @@ const (
 )
 
 type Service struct {
-	httpClient *http.Client
-	config     config.DpdcConfig
-	mu         sync.Mutex
-	token      string
-	tokenExp   time.Time
+	authClient  *datasources.Client
+	usageClient *datasources.Client
+	config      config.DpdcConfig
+	mu          sync.Mutex
+	token       string
+	tokenExp    time.Time
 }
 
 func NewService(cfg config.DpdcConfig) *Service {
 	return &Service{
-		httpClient: &http.Client{Timeout: cfg.Timeout},
-		config:     cfg,
+		authClient: datasources.NewClient(&datasources.ClientConfig{
+			BasePath: cfg.AuthURL,
+			Timeout:  cfg.Timeout,
+		}),
+		usageClient: datasources.NewClient(&datasources.ClientConfig{
+			BasePath: cfg.UsageURL,
+			Timeout:  cfg.Timeout,
+		}),
+		config: cfg,
 	}
 }
 
@@ -43,37 +49,16 @@ func (s *Service) GetBalance(ctx context.Context, id datasources.Identifier) (da
 
 	gql := fmt.Sprintf(`query { postBalanceDetails(input: {customerNumber: "%s", tenantCode: "DPDC"}) { accountId customerName balanceRemaining } }`, id.AccountNumber)
 	in := BalanceQueryRequest{Query: gql}
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(in); err != nil {
-		log.Printf("[DPDC] [GetBalance] Failed to encode JSON payload for account %s: %v", id.AccountNumber, err)
-		return datasources.Balance{}, err
-	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", s.config.UsageURL, &buf)
-	if err != nil {
-		log.Printf("[DPDC] [GetBalance] Failed to create request object for account %s: %v", id.AccountNumber, err)
-		return datasources.Balance{}, err
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("accesstoken", token)
-	req.Header.Set("tenantCode", s.config.TenantCode)
-	req.Header.Set("Content-Type", "application/json")
+	headers := make(http.Header)
+	headers.Set("Authorization", "Bearer "+token)
+	headers.Set("accesstoken", token)
+	headers.Set("tenantCode", s.config.TenantCode)
 
 	var gqlResp PostBalanceDetailsResponse
-	resp, err := s.httpClient.Do(req)
+	err = s.usageClient.Do(ctx, http.MethodPost, "", headers, &in, &gqlResp)
 	if err != nil {
 		log.Printf("[DPDC] [GetBalance] HTTP request execution failed for account %s: %v", id.AccountNumber, err)
-		return datasources.Balance{}, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("[DPDC] [GetBalance] Non-200 response received from usage service for account %s. Status: %s", id.AccountNumber, resp.Status)
-		return datasources.Balance{}, errors.New("Non-200 from DPDC GraphQL usage service")
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&gqlResp); err != nil {
-		log.Printf("[DPDC] [GetBalance] Failed to decode GraphQL response body for account %s: %v", id.AccountNumber, err)
 		return datasources.Balance{}, err
 	}
 
@@ -102,43 +87,15 @@ func (s *Service) getToken(ctx context.Context) (string, error) {
 		return "", errors.New("DPDC credentials are blank. Check your environment configuration")
 	}
 
-	emptyBody, err := json.Marshal(map[string]interface{}{})
-	if err != nil {
-		log.Printf("[DPDC] [getToken] Failed to marshal empty JSON body: %v", err)
-		return "", err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", s.config.AuthURL, bytes.NewReader(emptyBody))
-	if err != nil {
-		log.Printf("[DPDC] [getToken] Failed to create auth request: %v", err)
-		return "", err
-	}
-	req.Header.Set("clientId", s.config.ClientID)
-	req.Header.Set("clientSecret", s.config.ClientSecret)
-	req.Header.Set("tenantCode", s.config.TenantCode)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		log.Printf("[DPDC] [getToken] Auth HTTP execution failed: %v", err)
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	// if resp.StatusCode != http.StatusOK {
-	// 	log.Printf("[DPDC] [getToken] Auth endpoint rejected request. Status: %s. Using ClientID: %s", resp.Status, s.config.ClientID)
-	// 	return "", fmt.Errorf("Non-200 from DPDC Auth endpoint: %s", resp.Status)
-	// }
-
-	// FIX: Accept both 200 OK and 201 Created
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		log.Printf("[DPDC] [getToken] Auth endpoint rejected request. Status: %s. Using ClientID: %s", resp.Status, s.config.ClientID)
-		return "", fmt.Errorf("Non-success status from DPDC Auth endpoint: %s", resp.Status)
-	}
+	headers := make(http.Header)
+	headers.Set("clientId", s.config.ClientID)
+	headers.Set("clientSecret", s.config.ClientSecret)
+	headers.Set("tenantCode", s.config.TenantCode)
 
 	var auth AuthResponse
-	if err := json.NewDecoder(resp.Body).Decode(&auth); err != nil {
-		log.Printf("[DPDC] [getToken] Failed to decode auth JSON response body: %v", err)
+	err := s.authClient.Do(ctx, http.MethodPost, "", headers, map[string]any{}, &auth)
+	if err != nil {
+		log.Printf("[DPDC] [getToken] Auth HTTP execution failed: %v", err)
 		return "", err
 	}
 
