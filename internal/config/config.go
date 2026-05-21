@@ -63,6 +63,7 @@ type DpdcConfig struct {
 	ClientID     string
 	ClientSecret string
 	TenantCode   string
+	RateLimit    float64
 }
 
 var instance *Config
@@ -97,6 +98,7 @@ func Load() *Config {
 			ClientID:     getEnv("MA_DPDC_CLIENT_ID", "auth-ui"),
 			ClientSecret: getEnv("MA_DPDC_CLIENT_SECRET", ""),
 			TenantCode:   getEnv("MA_DPDC_TENANT_CODE", "DPDC"),
+			RateLimit:    parseFloat(getEnv("MA_DPDC_RATE_LIMIT", "2")),
 		},
 		Telemetry: TelemetryConfig{
 			Enabled:      parseBool(getEnv("MA_OTEL_ENABLED", "false")),
