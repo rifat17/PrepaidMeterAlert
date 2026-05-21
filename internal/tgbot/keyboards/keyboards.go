@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	RepoURL                = "https://github.com/m4hi2/PrepaidMeterAlert"
 	UniqAddMeter           = "add_meter"
 	UniqMyMeters           = "my_meters"
 	UniqHelp               = "help"
@@ -109,6 +110,15 @@ func MeterActionsMenu(meterID string) *tele.ReplyMarkup {
 			m.Data("← Back", UniqNavMeters),
 			m.Data("🏠 Main Menu", UniqNavMain),
 		),
+	)
+	return m
+}
+
+func HelpMenu() *tele.ReplyMarkup {
+	m := &tele.ReplyMarkup{}
+	m.Inline(
+		m.Row(m.URL("⭐ Star on GitHub", RepoURL)),
+		m.Row(m.Data("🏠 Main Menu", UniqNavMain)),
 	)
 	return m
 }

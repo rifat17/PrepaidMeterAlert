@@ -35,8 +35,9 @@ func (h *Handlers) OnHelp(c tele.Context) error {
 	text := "ℹ️ *PrepaidMeter Alert Bot*\n\n" +
 		"• *Add Meter* — Register a prepaid meter to monitor\n" +
 		"• *My Meters* — View and manage your registered meters\n\n" +
-		"You'll receive an alert when a meter's balance drops below the threshold you set."
-	return c.Edit(text, tele.ModeMarkdown, keyboards.MainMenu())
+		"You'll receive an alert when a meter's balance drops below the threshold you set.\n\n" +
+		"🐛 Found a bug or have a feature idea? [Report it here](" + keyboards.RepoURL + "/issues)"
+	return c.Edit(text, tele.ModeMarkdown, keyboards.HelpMenu())
 }
 
 func (h *Handlers) OnCancel(c tele.Context) error {
