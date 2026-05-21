@@ -54,7 +54,7 @@ cp .env.example .env
 # Then you can set MA_OTEL_ENABLED=true
 
 # Source the env if you don't use automatic env loaders like `direnv`
-source .env
+set -a && source .env && set +a
 
 # If you don't have postgres 18 installed, you can use the docker compose
 make infra
