@@ -193,5 +193,6 @@ func isTransient(status int) bool {
 	return status == http.StatusTooManyRequests ||
 		status == http.StatusBadGateway ||
 		status == http.StatusServiceUnavailable ||
-		status == http.StatusGatewayTimeout
+		status == http.StatusGatewayTimeout ||
+		status == http.StatusInternalServerError
 }

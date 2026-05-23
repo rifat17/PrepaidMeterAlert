@@ -11,9 +11,10 @@ type BalanceQueryRequest struct {
 type PostBalanceDetailsResponse struct {
 	Data struct {
 		PostBalanceDetails struct {
-			AccountID        string  `json:"accountId"`
-			CustomerName     string  `json:"customerName"`
-			BalanceRemaining float64 `json:"balanceRemaining,string"`
+			CustomerName      string  `json:"customerName"`
+			BalanceRemaining  float64 `json:"balanceRemaining,string"`
+			ErrorMessage      string  `json:"errorMessage"`
+			BalanceLatestDate string  `json:"balanceLatestDate"`
 		} `json:"postBalanceDetails"`
 	} `json:"data"`
 }

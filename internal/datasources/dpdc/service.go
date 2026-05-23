@@ -62,7 +62,7 @@ func (s *Service) GetBalance(ctx context.Context, id datasources.Identifier) (da
 		return datasources.Balance{}, fmt.Errorf("dpdc auth failed: %w", err)
 	}
 
-	gql := fmt.Sprintf(`query { postBalanceDetails(input: {customerNumber: "%s", tenantCode: "DPDC"}) { accountId customerName balanceRemaining } }`, id.AccountNumber)
+	gql := fmt.Sprintf(`query { postBalanceDetails(input: {customerNumber: "%s", tenantCode: "DPDC"}) { customerName balanceRemaining errorMessage balanceLatestDate} }`, id.AccountNumber)
 	in := BalanceQueryRequest{Query: gql}
 
 	headers := make(http.Header)
@@ -76,11 +76,14 @@ func (s *Service) GetBalance(ctx context.Context, id datasources.Identifier) (da
 	}
 
 	output := gqlResp.Data.PostBalanceDetails
-	slog.DebugContext(ctx, "dpdc balance retrieved", "account_number", id.AccountNumber, "returned_id", output.AccountID)
+	if output.ErrorMessage != "" {
+		return datasources.Balance{}, fmt.Errorf("dpdc: %s", output.ErrorMessage)
+	}
+	slog.DebugContext(ctx, "dpdc balance retrieved", "account_number", id.AccountNumber)
 	s.apiHits.Add(ctx, 1, metric.WithAttributes(attribute.String("dpdc.api", "graphql")))
 
 	return datasources.Balance{
-		Identifier: datasources.Identifier{AccountNumber: output.AccountID},
+		Identifier: id,
 		Balance:    output.BalanceRemaining,
 	}, nil
 }
