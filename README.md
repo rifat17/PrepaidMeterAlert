@@ -18,7 +18,7 @@ Register one or more prepaid meters through the bot. Every day the bot fetches t
 | --- | --- |
 | DESCO | ✅ Live |
 | NESCO | ✅ Live |
-| DPDC | Maybe (If a user contributes) |
+| DPDC | ✅ Live |
 
 ## How it works
 
