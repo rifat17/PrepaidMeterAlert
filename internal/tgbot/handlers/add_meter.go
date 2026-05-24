@@ -133,25 +133,25 @@ func (h *Handlers) OnNotifyMode(c tele.Context) error {
 	conv.Step = state.StepAddConfirm
 	h.state.Set(c.Sender().ID, conv)
 
-	meterDisplay := d.MeterNumber
-	if meterDisplay == "" {
-		meterDisplay = "(not provided)"
-	}
 	nicknameDisplay := d.Nickname
 	if nicknameDisplay == "" {
 		nicknameDisplay = "(none)"
+	}
+	meterLine := ""
+	if d.MeterNumber != "" {
+		meterLine = fmt.Sprintf("Meter #: %s\n", d.MeterNumber)
 	}
 	summary := fmt.Sprintf(
 		"📋 *Meter Summary*\n\n"+
 			"Provider: %s\n"+
 			"Account #: %s\n"+
-			"Meter #: %s\n"+
+			"%s"+
 			"Nickname: %s\n"+
 			"Threshold: %.0f BDT\n"+
 			"Alert mode: %s\n",
 		strings.ToUpper(d.Provider),
 		d.AccountNumber,
-		meterDisplay,
+		meterLine,
 		nicknameDisplay,
 		d.Threshold,
 		d.NotifyMode,
