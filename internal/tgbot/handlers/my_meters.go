@@ -298,18 +298,18 @@ func meterDetail(m *models.Meter) string {
 	if m.LastFetchAt != nil {
 		lastChecked = m.LastFetchAt.Format("02 Jan 2006 15:04")
 	}
-	meterDisplay := m.MeterNumber
-	if meterDisplay == "" {
-		meterDisplay = "(not provided)"
-	}
 	nicknameDisplay := m.Nickname
 	if nicknameDisplay == "" {
 		nicknameDisplay = "(none)"
 	}
+	meterLine := ""
+	if m.MeterNumber != "" {
+		meterLine = fmt.Sprintf("Meter #: %s\n", m.MeterNumber)
+	}
 	return fmt.Sprintf(
 		"⚡ *%s Meter*\n━━━━━━━━━━━━━━\n"+
 			"Account #: %s\n"+
-			"Meter #: %s\n"+
+			"%s"+
 			"Nickname: %s\n"+
 			"Balance: *%.2f BDT*\n"+
 			"Threshold: %.0f BDT\n"+
@@ -319,7 +319,7 @@ func meterDetail(m *models.Meter) string {
 			"%s only updates meter balance once a day, real time balance is not possible.",
 		provider,
 		m.AccountNumber,
-		meterDisplay,
+		meterLine,
 		nicknameDisplay,
 		m.Balance,
 		m.Threshold,
